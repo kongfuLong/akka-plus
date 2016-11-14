@@ -1,5 +1,6 @@
 package akka.actors;
 
+import akka.msg.Message;
 import akka.msg.Status;
 
 /**
@@ -7,12 +8,11 @@ import akka.msg.Status;
  */
 public class DistributeTellActor extends AbstractActor {
 
+
     @Override
-    public void onReceive(Object o) throws Throwable {
-        if (o instanceof Status) {
-            System.out.println("```````````msg:" + getSender().path() + ((Status) o).getMsg());
-        } else {
-            unhandled(o);
-        }
+    public void handleMsg(Message message) {
+        System.out.println("```````````msg:" + getSender().path() + message);
     }
+
+
 }

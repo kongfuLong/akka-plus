@@ -2,9 +2,9 @@ package akka.enter;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import akka.params.BaseParam;
-import akka.params.DistributeTellParam;
+import akka.msg.Message;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -13,21 +13,13 @@ import java.util.concurrent.CountDownLatch;
 public class TellSenderWrapper extends MsgSenderWrapper {
 
 
-    public TellSenderWrapper(ActorRef sender, ActorRef getter, ActorSystem system, CountDownLatch readyToSend) {
-        super(sender, getter, system, readyToSend);
+    public TellSenderWrapper(ActorRef sender, List<ActorRef> getters, ActorSystem system, CountDownLatch readyToSend) {
+        super(sender, getters, system, readyToSend);
     }
 
     @Override
-    public Object sendMsg(BaseParam baseParam) {
-        if(readyToSend.getCount()==1){
-            try {
-                readyToSend.await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        DistributeTellParam distributeTellParam = (DistributeTellParam) baseParam;
-                getGetter().tell(distributeTellParam.getParam(), null);
+    public Object handleMsg(Message message) {
+        getGetters().get().forEach(o->o.tell(message, null));
         return null;
     }
 }

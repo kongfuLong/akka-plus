@@ -1,22 +1,27 @@
 package akka.actors;
 
 import akka.actor.Address;
+import akka.actor.UntypedActor;
 import akka.cluster.Cluster;
 import akka.cluster.ClusterEvent;
 import akka.cluster.Member;
-import akka.enter.AkkaContext;
+import akka.enter.AddressContex;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by ruancl@xkeshi.com on 16/9/29.
  */
-public class ClusterActor extends AbstractActor {
+public class ClusterActor extends UntypedActor {
 
     Cluster cluster = Cluster.get(getContext().system());
 
+    private AddressContex addressContex;
+
+    public ClusterActor(AddressContex addressContex) {
+        this.addressContex = addressContex;
+    }
 
     @Override
     public void preStart() throws Exception {
@@ -34,28 +39,17 @@ public class ClusterActor extends AbstractActor {
         if (o instanceof ClusterEvent.MemberUp) {
             ClusterEvent.MemberUp memberUp = (ClusterEvent.MemberUp) o;
             Member member = memberUp.member();
+            Address address = member.address();
             System.out.println("member up :" + member);
-            Set<String> roles = member.getRoles();
-            for (String role : roles) {
-                List<Address> addresses = AkkaContext.addressMap.get(role);
-                Address address = member.address();
-                if (addresses == null) {
-                    addresses = new ArrayList<>();
-                    addresses.add(address);
-                    AkkaContext.addressMap.put(role, addresses);
-                } else {
-                    if (!addresses.contains(address)) {
-                        addresses.add(address);
-                    }
-                }
-            }
+            addressContex.addAddress(address);
             System.out.println("roles:" + memberUp.member().getRoles() + " || " + member.roles());
         } else if (o instanceof ClusterEvent.MemberRemoved) {
             System.out.println("member removed :" + ((ClusterEvent.MemberRemoved) o).member());
         } else if (o instanceof ClusterEvent.UnreachableMember) {
             ClusterEvent.UnreachableMember unreachableMember = (ClusterEvent.UnreachableMember) o;
             Address address = unreachableMember.member().address();
-            AkkaContext.deleteAddress(address);
+            addressContex.deleteAddress(address);
+           // addressesMap.deleteAddress(address);
             System.out.println("member unreachable :" + ((ClusterEvent.UnreachableMember) o).member());
         } else if (o instanceof ClusterEvent.MemberEvent) {
             // ignore

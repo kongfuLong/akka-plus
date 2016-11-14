@@ -1,167 +1,168 @@
 package akka.enter;
 
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.Props;
-import akka.actors.AbstractActor;
-import akka.actors.DistributeAskActor;
-import akka.actors.DistributeTellActor;
+import akka.actor.*;
+import akka.actors.ClusterActor;
+import akka.actors.DefaultAskActor;
+import akka.actors.RpcServerActor;
 import akka.cluster.Cluster;
 import akka.cluster.metrics.AdaptiveLoadBalancingGroup;
 import akka.cluster.metrics.HeapMetricsSelector;
 import akka.cluster.routing.ClusterRouterGroup;
 import akka.cluster.routing.ClusterRouterGroupSettings;
-import akka.params.BaseParam;
-import akka.params.DistributeAskParam;
-import akka.params.DistributeTellParam;
-import akka.routing.Pool;
-import akka.routing.RoundRobinPool;
+import akka.msg.Constant;
+import akka.msg.Message;
+import akka.params.DefaultAskHandle;
+import akka.params.RegisterBean;
+import akka.remote.RemoteScope;
 import akka.rpc.ProxyIntecept;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cglib.proxy.Enhancer;
 
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 /**
  * Created by ruancl@xkeshi.com on 16/10/9.
  */
 public class AkSystem {
 
+    private static final Logger logger = LoggerFactory.getLogger(AkSystem.class);
     private final ActorSystem system;
-
-    private ActorRef cluster;
-
-    private CountDownLatch countDownLatch = new CountDownLatch(1);
-
     private final int MAX_THREAD_COUNT = 100;
+    private CountDownLatch countDownLatch = new CountDownLatch(1);
+    private AddressContex addressContex = new AddressContex();
+
+    private ActorRef rpcActor;
+
+    private ActorRef clusterActor;
 
 
-    private ConcurrentHashMap<Class, Object> beans = new ConcurrentHashMap<>();
 
-    public AkSystem(ActorSystem system, ActorRef cluster) {
+
+    public AkSystem(ActorSystem system) {
         this.system = system;
-        this.cluster = cluster;
     }
 
-    public <T> T proxy(Class<T> clazz) {
-        if (countDownLatch.getCount()==1) {
-            try {
-                countDownLatch.await();//等待直到加入集群完毕信号
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+    /**
+     *
+     * @param system
+     * @param withCluster 启动集群监听
+     */
+    public AkSystem(ActorSystem system,Boolean withCluster,Boolean rpcServerProvider) {
+        this.system = system;
+        if (withCluster){
+            clusterActor = system.actorOf(Props.create(ClusterActor.class,addressContex));
         }
+        if (withCluster){
+            system.actorOf(Props.create(RpcServerActor.class));
+        }
+    }
 
-        Object bean = beans.get(clazz);
-        if (bean != null) {
-            return (T) bean;
+    public Object getBean(Class clazzInterface){
+        //对象可以交于spring托管
+        if(rpcActor==null){
+            rpcActor = getRouterActor(Arrays.asList(Constant.RPCPATH));
         }
         Enhancer enhancer = new Enhancer();
-        enhancer.setSuperclass(clazz);
-        enhancer.setCallback(new ProxyIntecept(clazz, system));
-        bean = enhancer.create();
-        beans.put(clazz, bean);
-        return (T) bean;
+        enhancer.setCallback(new ProxyIntecept(clazzInterface,rpcActor));
+        enhancer.setSuperclass(clazzInterface);
+        return  enhancer.create();
     }
 
-    public void deleteErrorBean() {
-
-    }
 
     /**
-     * 本地的actor注册
-     *
-     * @param clazz
-     * @param objects 构造函数参数
+     * actor 注册
+     * @param registerBean
      * @return
      */
-    /*public AkSystem register(Class<? extends AbstractActor> clazz, Object... objects) {
-        ActorRef ref = system.actorOf(new RoundRobinPool(1).props(Props.create(clazz, objects)), clazz.getName());
-        System.out.println("register actor:"+ref.path());
+    public AkSystem register(RegisterBean registerBean) {
+        ActorRef ref = system.actorOf(registerBean.getPool().props(Props.create(registerBean.gettClass())), registerBean.getName());
+        logger.info("register actor:{}", ref.path());
         return this;
     }
 
-    public AkSystem register(Class<? extends AbstractActor> clazz,Pool pool, Object... objects) {
-        ActorRef ref = system.actorOf(pool.props(Props.create(clazz, objects)), clazz.getName());
-        System.out.println("register actor:"+ref.path());
-        return this;
-    }*/
 
-    public AkSystem register(Class<? extends AbstractActor> clazz, Pool pool, String name, Object... objects){
-        ActorRef ref = system.actorOf(pool.props(Props.create(clazz, objects)), name);
-        System.out.println("register actor:"+ref.path());
-        return this;
-    }
-
-    public AkSystem register(Class<? extends AbstractActor> clazz, String name, Object... objects){
-        ActorRef ref = system.actorOf(new RoundRobinPool(3).props(Props.create(clazz, objects)), name);
-        System.out.println("register actor:"+ref.path());
-        return this;
-    }
-
+    /**
+     * 集群加入成功后触发
+     */
     public void executeOnMemberUp() {
-        Cluster.get(system).registerOnMemberUp(() -> {
-            countDownLatch.countDown();
-        });
-        // new RequestStrategy(system, cluster, baseParam));
+        Cluster.get(system).registerOnMemberUp(() ->
+            countDownLatch.countDown()
+        );
     }
 
+    private ActorRef getRouterActor(Iterable<String> routeesPaths){
+        ClusterRouterGroup clusterRouterGroup = new ClusterRouterGroup(
+                new AdaptiveLoadBalancingGroup(
+                        HeapMetricsSelector.getInstance(),
+                        routeesPaths),
+                new ClusterRouterGroupSettings(MAX_THREAD_COUNT, routeesPaths,
+                        false, Constant.ROLE_NAME));
+        return getSystem().actorOf(clusterRouterGroup.props());
+    }
 
     /**
-     * 创建一个信息发射器 以便于相同信息发送的复用(基于taskname区分)
-     *
-     * @param baseParam 使用baseParam子类 不同子类对应不同的信息类型
+     * 创建一个信息发射器 以便于相同信息发送的复用
+     * 路由消息(tell模式)
      */
-    public MsgSenderWrapper senderCreate(BaseParam baseParam) {
-        if (baseParam instanceof DistributeAskParam) {
-            return new AskSenderWrapper(null,system.actorOf(Props.create(DistributeAskActor.class), baseParam.getTaskName()), system,countDownLatch);
-        } /*else if (baseParam instanceof DistributeTellParam) {
-            DistributeTellParam distributeTellParam = (DistributeTellParam) baseParam;
-            Class excutorClass = distributeTellParam.getExecuter();
-            String roleName = distributeTellParam.getRoleName();
-            Pool pool = distributeTellParam.getLocal();
-            if (pool == null) {
-                pool = new RoundRobinPool(5);
-            }
-            List<Address> addresses = AkkaContext.addressMap.get(roleName);
-            Address[] arr = addresses.toArray(new Address[addresses.size()]);
-            final ActorRef ref = getSystem().actorOf(new RemoteRouterConfig(pool, arr).props(Props.create(excutorClass)),baseParam.getTaskName());
-            return new TellSenderWrapper(system.actorOf(Props.create(DistributeTellActor.class)),ref, system);
-        }*/
-        else if (baseParam instanceof DistributeTellParam) {
-            DistributeTellParam distributeTellParam = (DistributeTellParam) baseParam;
-            String roleName = distributeTellParam.getRoleName();
-            Iterable<String> routeesPaths = distributeTellParam.getRouteesPaths();
-            ClusterRouterGroup clusterRouterGroup = new ClusterRouterGroup(
-                    new AdaptiveLoadBalancingGroup(
-                            HeapMetricsSelector.getInstance(),
-                            routeesPaths),
-                    new ClusterRouterGroupSettings(MAX_THREAD_COUNT,routeesPaths,
-                            false,roleName ));
-            final ActorRef ref = getSystem().actorOf(clusterRouterGroup.props());
-            return new TellSenderWrapper(system.actorOf(Props.create(DistributeTellActor.class)),ref, system,countDownLatch);
-        }
-        return null;
+    public MsgSenderWrapper tellRouter(final String path) {
+        return new TellSenderWrapper(null,
+                Arrays.asList(getRouterActor(Arrays.asList(path))),
+                system,
+                countDownLatch);
     }
 
+
     /**
-     * 自定义集群发现器实现
-     *
-     * @param clazz
-     * @param objects
+     * 广播消息(tell模式)
+     * @param path
      * @return
      */
-    public AkSystem overrideCluster(Class clazz, Object... objects) {
-        // this.system.stop(this.cluster);
-        this.cluster = system.actorOf(Props.create(clazz, objects), clazz.getSimpleName());
-        return this;
+    public MsgSenderWrapper tellBroadCast(final String path) {
+        return new TellSenderWrapper(system.actorOf(Props.create(DefaultAskActor.class,addressContex,path)),
+                addressContex.getActorRefs(path).stream().map(ActorRefMap::getV).collect(Collectors.toList()),
+                system,
+                countDownLatch);
     }
+
+
+    /**
+     * 路由消息(ask模式)
+     * @param path
+     * @return
+     */
+    public MsgSenderWrapper AskRouter(final String path) {
+
+        return new AskSenderWrapper<>(system.actorOf(Props.create(DefaultAskActor.class)),
+                Arrays.asList(getRouterActor(Arrays.asList(path))),
+                system,
+                countDownLatch,
+                new DefaultAskHandle());
+    }
+
+
+    /**
+     * 使用该功能发消息必须要先启动集群监听@AkSystem
+     *
+     * 广播消息(ask模式)
+     * @param path
+     * @return
+     */
+    public MsgSenderWrapper askBroadCast(final String path){
+        return new AskSenderWrapper<>(system.actorOf(Props.create(DefaultAskActor.class,addressContex,path)),
+                addressContex.getActorRefs(path).stream().map(ActorRefMap::getV).collect(Collectors.toList()),
+                system,
+                countDownLatch,
+                new DefaultAskHandle());
+    }
+
 
     public ActorSystem getSystem() {
         return system;
     }
 
-    public ActorRef getCluster() {
-        return cluster;
-    }
 }

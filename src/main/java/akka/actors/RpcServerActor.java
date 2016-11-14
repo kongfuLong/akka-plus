@@ -1,8 +1,10 @@
 package akka.actors;
 
-import akka.enter.AkkaContext;
+import akka.actor.UntypedActor;
 import akka.msg.RpcEntity;
 import akka.msg.RpcResult;
+import org.springframework.web.context.ContextLoader;
+import org.springframework.web.context.WebApplicationContext;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -11,8 +13,9 @@ import java.util.List;
 /**
  * Created by ruancl@xkeshi.com on 16/10/11.
  */
-public class RpcServerActor extends AbstractActor {
+public class RpcServerActor extends UntypedActor {
 
+    private WebApplicationContext wac = ContextLoader.getCurrentWebApplicationContext();
 
     @Override
     public void onReceive(Object o) throws Throwable {
@@ -20,7 +23,7 @@ public class RpcServerActor extends AbstractActor {
         if (o instanceof RpcEntity) {
             RpcEntity rpcEntity = (RpcEntity) o;
             Object[] params = rpcEntity.getParam();
-            Object bean = AkkaContext.getBean(rpcEntity.getInterfaceName());
+            Object bean = wac.getBean(rpcEntity.getInterfaceName());
             Class<?>[] paramerTypes = new Class<?>[]{};
             List<Class> paramType = new ArrayList<>();
             if (bean != null) {

@@ -1,6 +1,10 @@
 package akka.actors;
 
+import akka.actor.ActorIdentity;
+import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
+import akka.msg.Constant;
+import akka.msg.Message;
 import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
 
@@ -10,8 +14,15 @@ import scala.runtime.BoxedUnit;
  */
 public abstract class AbstractActor extends UntypedActor {
 
+
     @Override
-    public void aroundReceive(PartialFunction<Object, BoxedUnit> receive, Object msg) {
-        super.aroundReceive(receive, msg);
+    public void onReceive(Object o) throws Throwable {
+        if(o instanceof Message){
+            handleMsg((Message) o);
+        }else {
+            unhandled(o);
+        }
     }
+
+    public abstract void handleMsg(Message message);
 }

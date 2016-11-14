@@ -1,9 +1,11 @@
 package akka.demo.client;
 
 import akka.enter.AkSystem;
-import akka.enter.AkkaContext;
+import akka.enter.AkkaInitService;
 import akka.enter.MsgSenderWrapper;
-import akka.params.DistributeTellParam;
+import akka.msg.Message;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import java.util.Arrays;
 
@@ -14,17 +16,19 @@ public class TestMain {
 
     public static void main(String[] args) {
 
-        final AkSystem aksystem = AkkaContext.createSystem(2553, "EsbSystem", "customRoleName",false);
+
+
+        ApplicationContext context = new ClassPathXmlApplicationContext("application.xml");
+        AkkaInitService akkaInitService = context.getBean(AkkaInitService.class);
+        AkSystem aksystem = akkaInitService.getAkSystem();
         /**
          * 单向消息发送
          */
         Iterable<String> routeesPaths = Arrays.asList("/user/greeting");
-        DistributeTellParam param = new DistributeTellParam("hello i m jackie chan", "calculateModule", "customTaskName",routeesPaths);
         //以任务名为单位创建一个发射器
-        MsgSenderWrapper senderWrapper = aksystem.senderCreate(param);
+        MsgSenderWrapper senderWrapper = aksystem.tellRouter(routeesPaths);
         for(int i=1;i<10;i++){
-            param.setParam("hello i m jackie chan"+i);
-            senderWrapper.sendMsg(param);
+            senderWrapper.sendMsg(new Message("hello"));
         }
 
 
@@ -40,7 +44,7 @@ public class TestMain {
         /**
          * 全双工  集群任务+结果返回统一处理
          */
-            /*DistributeAskParam askParam = new DistributeAskParam.Builder("calculateModule",
+        /*    DistributeAskParam askParam = new DistributeAskParam.Builder("calculateModule",
                     (it) -> {
                         Double total = new Double(0);
                         while (it.hasNext()) {
@@ -55,9 +59,8 @@ public class TestMain {
                     DoCalcu.class)
                     .setCut((serverSize, address, index) -> index * 2 + 100 + "")
                     .setTimeLimit(10000l).build();
-            MsgSenderWrapper senderWrapper2 = system.senderCreate(param);
-            senderWrapper2.sendMsg(askParam);
-*/
+            MsgSenderWrapper senderWrapper2 = aksystem.senderCreate(param);
+            senderWrapper2.sendMsg(askParam);*/
     }
 
 
