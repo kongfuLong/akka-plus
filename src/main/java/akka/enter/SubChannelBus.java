@@ -7,10 +7,10 @@ import akka.util.Subclassification;
 
 /**
  * Created by ruancl@xkeshi.com on 16/10/17.
- *
+ * <p>
  * 通过字符串匹配主题   subclassification可以调整匹配字符串规则
  */
-public class SubChannelBus extends SubchannelEventBus<MsgEnvelope,ActorRef,String> {
+public class SubChannelBus extends SubchannelEventBus<MsgEnvelope, ActorRef, String> {
     @Override
     public Subclassification<String> subclassification() {
         return new Subclassification<String>() {
@@ -33,6 +33,6 @@ public class SubChannelBus extends SubchannelEventBus<MsgEnvelope,ActorRef,Strin
 
     @Override
     public void publish(MsgEnvelope msgEnvelope, ActorRef actorRef) {
-        actorRef.tell(msgEnvelope.payload,ActorRef.noSender());
+        actorRef.tell(msgEnvelope.payload, ActorRef.noSender());
     }
 }

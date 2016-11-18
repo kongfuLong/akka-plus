@@ -16,8 +16,8 @@ public class ActorRefMap {
         this.v = v;
     }
 
-    public Boolean removeAdd(Address address){
-        if(address.toString().equals(k.toString())){
+    public Boolean removeAdd(Address address) {
+        if (address.toString().equals(k.toString())) {
             return true;
         }
         return false;

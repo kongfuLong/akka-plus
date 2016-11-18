@@ -8,12 +8,12 @@ import akka.routing.RoundRobinPool;
  * Created by ruancl@xkeshi.com on 16/10/20.
  */
 public class RegisterBean<T extends AbstractActor> {
-    
+
     private final Class<T> tClass;
 
     private final String name;
 
-    private  Pool pool = new RoundRobinPool(1);
+    private Pool pool = new RoundRobinPool(1);
 
 
     public RegisterBean(Class<T> tClass, String name) {
@@ -27,10 +27,6 @@ public class RegisterBean<T extends AbstractActor> {
         this.pool = pool;
     }
 
-    public void setPool(Pool pool) {
-        this.pool = pool;
-    }
-
     public Class<T> gettClass() {
         return tClass;
     }
@@ -41,5 +37,9 @@ public class RegisterBean<T extends AbstractActor> {
 
     public Pool getPool() {
         return pool;
+    }
+
+    public void setPool(Pool pool) {
+        this.pool = pool;
     }
 }

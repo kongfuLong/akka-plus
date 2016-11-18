@@ -1,12 +1,7 @@
 package akka.actors;
 
-import akka.actor.ActorIdentity;
-import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
-import akka.msg.Constant;
 import akka.msg.Message;
-import scala.PartialFunction;
-import scala.runtime.BoxedUnit;
 
 /**
  * Created by ruancl@xkeshi.com on 16/10/12.
@@ -17,12 +12,21 @@ public abstract class AbstractActor extends UntypedActor {
 
     @Override
     public void onReceive(Object o) throws Throwable {
-        if(o instanceof Message){
+        if (o instanceof Message) {
             handleMsg((Message) o);
-        }else {
+        } else {
             unhandled(o);
         }
     }
 
-    public abstract void handleMsg(Message message);
+    /**
+     * 回复消息
+     *
+     * @param message
+     */
+    protected void feedBack(Message message) {
+        sender().tell(message, getSelf());
+    }
+
+    protected abstract void handleMsg(Message message);
 }

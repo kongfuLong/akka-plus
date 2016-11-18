@@ -12,6 +12,8 @@ import java.lang.annotation.*;
 @Documented
 public @interface Actor {
     String name();
+
     PoolType pool() default PoolType.ROUBIN;
+
     int number() default 1;
 }

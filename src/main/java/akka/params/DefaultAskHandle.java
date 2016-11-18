@@ -9,10 +9,10 @@ import java.util.Iterator;
 /**
  * Created by ruancl@xkeshi.com on 16/11/9.
  */
-public class DefaultAskHandle  implements AskHandle<Message,Message> {
+public class DefaultAskHandle implements AskHandle<Message, Message> {
     @Override
     public Message getReturn(Iterator<Object> it) {
-        return null;
+        return (Message) it.next();
     }
 
     @Override
@@ -36,7 +36,7 @@ public class DefaultAskHandle  implements AskHandle<Message,Message> {
 
     @Override
     public void onComplete(ActorRef actorRef, Throwable throwable, Object o) {
-
+        System.out.println("complete");
     }
 
 

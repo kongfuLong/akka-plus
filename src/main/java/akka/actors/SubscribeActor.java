@@ -15,13 +15,13 @@ public class SubscribeActor extends UntypedActor {
 
     public SubscribeActor(final List<String> list, final String mainPath) {
         ActorSelection selection =
-                getContext().actorSelection(mainPath+path);
+                getContext().actorSelection(mainPath + path);
         System.out.println("发送主题注册");
-        selection.tell(list.toArray(new String[list.size()]),getSelf());
+        selection.tell(list.toArray(new String[list.size()]), getSelf());
     }
 
     @Override
     public void onReceive(Object o) throws Throwable {
-        System.out.println("收到消息:"+o);
+        System.out.println("收到消息:" + o);
     }
 }

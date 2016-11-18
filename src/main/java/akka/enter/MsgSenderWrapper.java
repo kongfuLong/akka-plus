@@ -3,55 +3,73 @@ package akka.enter;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.msg.Message;
+import com.xkeshi.core.utils.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collectors;
 
 /**
  * Created by ruancl@xkeshi.com on 16/10/12.
  */
 public abstract class MsgSenderWrapper {
 
+    private static final Logger logger = LoggerFactory.getLogger(MsgSenderWrapper.class);
 
-    protected ActorRef sender;
 
-    protected List<ActorRef> getters;
+    private ActorRef sender;
 
-    protected ActorSystem system;
+    private String gettersKey;
 
-    protected CountDownLatch readyToSend;
+    private ActorSystem system;
 
-    public MsgSenderWrapper(ActorRef sender, List<ActorRef> getters, ActorSystem system, CountDownLatch readyToSend) {
-        this.sender = sender;
-        this.getters = getters;
+    private AddressContex addressContex;
+
+
+    protected MsgSenderWrapper(String gettersKey, AddressContex addressContex, ActorSystem system) {
+        this.sender = addressContex.getSender(system, gettersKey);
+        this.gettersKey = gettersKey;
         this.system = system;
-        this.readyToSend = readyToSend;
+        this.addressContex = addressContex;
     }
 
-    public ActorRef getSender() {
+
+    protected ActorRef getSender() {
         return sender;
     }
 
-    public Optional<List<ActorRef>> getGetters() {
-        return Optional.of(getters);
+    protected List<ActorRef> getGetters(Boolean ifCluster) {
+        if (!ifCluster) {
+            return Arrays.asList(addressContex.getRoutActor(system, gettersKey));
+        }
+        List<ActorRefMap> maps = addressContex.getActorRefs(gettersKey);
+        if (CollectionUtils.isEmpty(maps)) {
+            System.out.println("暂无可用客户端接收消息");
+            logger.info("暂无可用客户端接收消息");
+            return null;
+        }
+        return maps.stream().map(ActorRefMap::getV).collect(Collectors.toList());
     }
 
-    public ActorSystem getSystem() {
+    protected ActorSystem getSystem() {
         return system;
     }
 
     public Object sendMsg(Message message) {
-        //防止集群加入动作还未完成就立马发信息  造成信息丢失
-        if (readyToSend.getCount() == 1) {
-            try {
-                readyToSend.await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        return handleMsg(message);
+        return handleMsg(message, false);
     }
 
-    public abstract Object handleMsg(Message message);
+    /**
+     * @param message
+     * @param ifCluster false 默认 路由模式 单条消息发送   true 集群模式 一对多发送
+     * @return
+     */
+    public Object sendMsg(Message message, Boolean ifCluster) {
+        return handleMsg(message, ifCluster);
+    }
+
+
+    protected abstract Object handleMsg(Message message, Boolean ifCluster);
 }

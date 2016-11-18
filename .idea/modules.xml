@@ -3,6 +3,9 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/akka-plus.iml" filepath="$PROJECT_DIR$/akka-plus.iml" />
+      <module fileurl="file://$PROJECT_DIR$/client/client.iml" filepath="$PROJECT_DIR$/client/client.iml" />
+      <module fileurl="file://$PROJECT_DIR$/client2/client2.iml" filepath="$PROJECT_DIR$/client2/client2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/server/server.iml" filepath="$PROJECT_DIR$/server/server.iml" />
     </modules>
   </component>
 </project>

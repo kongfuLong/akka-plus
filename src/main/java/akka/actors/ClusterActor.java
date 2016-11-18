@@ -7,9 +7,6 @@ import akka.cluster.ClusterEvent;
 import akka.cluster.Member;
 import akka.enter.AddressContex;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
  * Created by ruancl@xkeshi.com on 16/9/29.
  */
@@ -49,7 +46,7 @@ public class ClusterActor extends UntypedActor {
             ClusterEvent.UnreachableMember unreachableMember = (ClusterEvent.UnreachableMember) o;
             Address address = unreachableMember.member().address();
             addressContex.deleteAddress(address);
-           // addressesMap.deleteAddress(address);
+            // addressesMap.deleteAddress(address);
             System.out.println("member unreachable :" + ((ClusterEvent.UnreachableMember) o).member());
         } else if (o instanceof ClusterEvent.MemberEvent) {
             // ignore

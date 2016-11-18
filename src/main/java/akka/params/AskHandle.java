@@ -7,13 +7,14 @@ import java.util.Iterator;
 /**
  * Created by ruancl@xkeshi.com on 16/11/9.
  * 任务结果统一返回处理  需实现该接口自定义返回内容
- *
+ * <p>
  * 任务分割策略  需自己实现  返回对象为消息对象  汇总使用   需要序列化
  */
-public interface AskHandle<S,R>  {
+public interface AskHandle<S, R> {
 
     /**
      * 任务结果统一返回处理  需实现该接口自定义返回内容
+     *
      * @param it
      * @return
      */
@@ -21,6 +22,7 @@ public interface AskHandle<S,R>  {
 
     /**
      * 任务分割策略  需自己实现  返回对象为消息对象  汇总使用   需要序列化
+     *
      * @param cutParam
      * @return
      */
@@ -28,6 +30,7 @@ public interface AskHandle<S,R>  {
 
     /**
      * 单个任务成功返回
+     *
      * @param actorRef
      * @param o
      */
@@ -35,6 +38,7 @@ public interface AskHandle<S,R>  {
 
     /**
      * 任务异常失败
+     *
      * @param actorRef
      * @param throwable
      * @param askHandle
@@ -44,10 +48,11 @@ public interface AskHandle<S,R>  {
 
     /**
      * 推送完结
+     *
      * @param actorRef
      * @param throwable
      * @param o
      */
-    void onComplete(ActorRef actorRef,Throwable throwable,Object o);
+    void onComplete(ActorRef actorRef, Throwable throwable, Object o);
 
 }

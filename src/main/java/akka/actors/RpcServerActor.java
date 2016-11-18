@@ -1,10 +1,10 @@
 package akka.actors;
 
 import akka.actor.UntypedActor;
+import akka.enter.SpringContextUtil;
 import akka.msg.RpcEntity;
 import akka.msg.RpcResult;
-import org.springframework.web.context.ContextLoader;
-import org.springframework.web.context.WebApplicationContext;
+import akka.test.Hello;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -15,7 +15,11 @@ import java.util.List;
  */
 public class RpcServerActor extends UntypedActor {
 
-    private WebApplicationContext wac = ContextLoader.getCurrentWebApplicationContext();
+    private SpringContextUtil applicationContextUtil;
+
+    public RpcServerActor(SpringContextUtil applicationContextUtil) {
+        this.applicationContextUtil = applicationContextUtil;
+    }
 
     @Override
     public void onReceive(Object o) throws Throwable {
@@ -23,7 +27,10 @@ public class RpcServerActor extends UntypedActor {
         if (o instanceof RpcEntity) {
             RpcEntity rpcEntity = (RpcEntity) o;
             Object[] params = rpcEntity.getParam();
-            Object bean = wac.getBean(rpcEntity.getInterfaceName());
+            System.out.println(rpcEntity.getInterfaceName() + " :: " + Hello.class);
+            System.out.println("是否一样:" + (rpcEntity.getInterfaceName() == Hello.class));
+            System.out.println(applicationContextUtil.getBean(Hello.class).sayHello());
+            Object bean = applicationContextUtil.getBean(rpcEntity.getInterfaceName());
             Class<?>[] paramerTypes = new Class<?>[]{};
             List<Class> paramType = new ArrayList<>();
             if (bean != null) {

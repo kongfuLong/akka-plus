@@ -5,13 +5,13 @@ import akka.routing.*;
 /**
  * Created by ruancl@xkeshi.com on 16/10/20.
  */
-public enum  PoolType {
+public enum PoolType {
 
-    ROUBIN,RANDOM,BROADCAST,BALANCE,CONSISTENTHASH;
+    ROUBIN, RANDOM, BROADCAST, BALANCE, CONSISTENTHASH;
 
 
-    public Pool getPool(int num){
-        switch (this){
+    public Pool getPool(int num) {
+        switch (this) {
             case ROUBIN:
                 return new RoundRobinPool(num);
             case RANDOM:

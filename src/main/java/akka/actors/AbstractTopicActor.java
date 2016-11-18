@@ -17,8 +17,8 @@ public abstract class AbstractTopicActor extends AbstractActor {
 
     @Override
     public void aroundReceive(PartialFunction<Object, BoxedUnit> receive, Object msg) {
-        if(msg instanceof String && msg.equals("are you ready?")){
-            getSender().tell(topic,getSelf());
+        if (msg instanceof String && msg.equals("are you ready?")) {
+            getSender().tell(topic, getSelf());
         }
         super.aroundReceive(receive, msg);
     }

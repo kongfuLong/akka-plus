@@ -20,16 +20,16 @@ public class TopicActor extends UntypedActor {
     public void onReceive(Object o) throws Throwable {
         System.out.println("收到消息:" + o + "地址:" + getSender().path().address());
         String add = getSender().path().address().toString();
-        if(o instanceof String[]) {
-           String[] arr = (String[]) o;
-            for(String path : arr){
-                    //与客户家做一次握手确认该actor状态可用
-                    ActorSelection selection = getContext().actorSelection(add+path);
-                    selection.tell("are you ready?",getSelf());
+        if (o instanceof String[]) {
+            String[] arr = (String[]) o;
+            for (String path : arr) {
+                //与客户家做一次握手确认该actor状态可用
+                ActorSelection selection = getContext().actorSelection(add + path);
+                selection.tell("are you ready?", getSelf());
             }
             getSender().tell("主题注册成功", null);
-        }else if(o instanceof String){
-            eventBus.subscribe(getSender(),o.toString());
+        } else if (o instanceof String) {
+            eventBus.subscribe(getSender(), o.toString());
         }
     }
 }

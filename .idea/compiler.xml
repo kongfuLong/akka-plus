@@ -22,12 +22,17 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
-        <module name="akka-plus" />
+        <module name="client" />
+        <module name="client2" />
+        <module name="server" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="akka-plus" target="1.8" />
+      <module name="client" target="1.8" />
+      <module name="client2" target="1.8" />
       <module name="rabbitmq" target="1.5" />
+      <module name="server" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>

@@ -1,11 +1,8 @@
 package akka.enter;
 
-import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.msg.Message;
 
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * Created by ruancl@xkeshi.com on 16/10/12.
@@ -13,13 +10,13 @@ import java.util.concurrent.CountDownLatch;
 public class TellSenderWrapper extends MsgSenderWrapper {
 
 
-    public TellSenderWrapper(ActorRef sender, List<ActorRef> getters, ActorSystem system, CountDownLatch readyToSend) {
-        super(sender, getters, system, readyToSend);
+    public TellSenderWrapper(String name, AddressContex addressContex, ActorSystem system) {
+        super(name, addressContex, system);
     }
 
     @Override
-    public Object handleMsg(Message message) {
-        getGetters().get().forEach(o->o.tell(message, null));
+    public Object handleMsg(Message message, Boolean ifCluster) {
+        getGetters(ifCluster).forEach(o -> o.tell(message, getSender()));
         return null;
     }
 }
